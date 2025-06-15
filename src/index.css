@@ -93,12 +93,6 @@
     @apply bg-background text-foreground;
   }
 
-  .bg-grid-white\/\[0\.05\] {
-    background-image: linear-gradient(white 1px, transparent 1px), linear-gradient(to right, white 1px, transparent 1px);
-    background-size: 80px 80px;
-    background-color: transparent;
-  }
-
   @keyframes fade-in-down {
     from {
       opacity: 0;

@@ -6,8 +6,7 @@ import { Link } from 'react-router-dom';
 const Index = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center text-center p-4">
-      <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
-      <div className="z-10">
+      <div>
         <h1 className="text-6xl md:text-7xl font-extrabold tracking-tighter mb-4 animate-fade-in-down">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-orange-400">
             StekFinder
