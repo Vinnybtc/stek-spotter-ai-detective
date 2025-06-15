@@ -1,9 +1,8 @@
 
-```typescript
+import React from 'react';
 import PageLayout from '@/components/layout/PageLayout';
 import StekFinderInput from '@/components/stek-finder/StekFinderInput';
 import StekFinderResults from '@/components/stek-finder/StekFinderResults';
-import React from 'react';
 import { useStekFinder } from '@/hooks/useStekFinder';
 
 const StekFinder = () => {
@@ -53,4 +52,3 @@ const StekFinder = () => {
 };
 
 export default StekFinder;
-```

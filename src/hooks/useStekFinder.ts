@@ -1,5 +1,4 @@
 
-```typescript
 import { useState } from 'react';
 
 export interface StekResult {
@@ -81,4 +80,3 @@ export const useStekFinder = () => {
 
     return { results, isLoading, error, shouldHighlightInput, credits, handleSearch, handleClear, user };
 };
-```

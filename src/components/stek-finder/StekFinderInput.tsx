@@ -1,5 +1,4 @@
 
-```typescript
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -115,4 +114,3 @@ const StekFinderInput = ({ onSearch, isLoading, onClear, user, credits, shouldHi
 };
 
 export default StekFinderInput;
-```
