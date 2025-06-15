@@ -1,5 +1,4 @@
 
-```css
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -132,4 +131,3 @@
       opacity: 0;
   }
 }
-```
