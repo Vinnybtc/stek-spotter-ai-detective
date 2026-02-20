@@ -46,7 +46,7 @@ function saveHistory(results: StekResult[]) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(results.slice(0, MAX_HISTORY)));
 }
 
-function resizeAndConvertToBase64(file: File, maxSize = 1500): Promise<string> {
+function resizeAndConvertToBase64(file: File, maxSize = 1024): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {

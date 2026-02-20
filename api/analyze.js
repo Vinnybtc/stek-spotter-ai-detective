@@ -84,7 +84,7 @@ export default async function handler(req, res) {
                 type: 'image_url',
                 image_url: {
                   url: `data:image/jpeg;base64,${imageBase64}`,
-                  detail: 'high',
+                  detail: 'auto',
                 },
               },
             ],
@@ -104,10 +104,29 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
-    const content = data.choices[0]?.message?.content;
+    console.log('OpenAI response:', JSON.stringify(data, null, 2));
 
-    if (!content) {
+    const choice = data.choices?.[0];
+    if (!choice) {
+      console.error('No choices in response:', data);
       return res.status(500).json({ error: 'Geen analyse resultaat ontvangen.' });
+    }
+
+    // Check voor refusal
+    if (choice.message?.refusal) {
+      console.error('Model refused:', choice.message.refusal);
+      return res.status(500).json({ error: 'Het model kon deze foto niet analyseren. Probeer een andere foto.' });
+    }
+
+    // Check finish_reason
+    if (choice.finish_reason === 'content_filter') {
+      return res.status(500).json({ error: 'De foto is geblokkeerd door het inhoudsfilter. Probeer een andere foto.' });
+    }
+
+    const content = choice.message?.content;
+    if (!content) {
+      console.error('No content in choice:', choice);
+      return res.status(500).json({ error: 'Geen analyse resultaat ontvangen. Probeer opnieuw.' });
     }
 
     try {
