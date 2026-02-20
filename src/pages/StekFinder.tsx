@@ -41,8 +41,8 @@ const StekFinder = () => {
         <div className="mt-6 bg-black/20 border border-white/10 rounded-2xl p-4 max-w-2xl mx-auto text-center">
           <p className="font-bold text-sky-400">&#10024; Exclusieve B&egrave;ta &#10024;</p>
           <p className="mt-2 text-white/80">
-            Upload een foto van je visplek en onze AI achterhaalt de exacte locatie.
-            Herkenningspunten, vegetatie en watertype — automatisch geanalyseerd.
+            Upload een visfoto en onze AI achterhaalt de exacte locatie.
+            Werkt met vangstfoto's, stekfoto's en alles met water op de achtergrond.
           </p>
         </div>
       </div>
@@ -73,7 +73,7 @@ const StekFinder = () => {
             <div className="text-5xl mb-4">🐟</div>
             <p className="text-xl font-bold text-white/90 mb-2">{funMessage}</p>
             <p className="text-sm text-white/50 mt-3">
-              Tip: upload een foto van de plek waar je vist — water, oever, brug, steiger. Dat werkt het beste!
+              Er ging iets mis met de verwerking. Probeer het nog eens!
             </p>
             <p className="text-xs text-green-400 mt-2">Je credit is niet afgeschreven.</p>
           </div>

@@ -194,8 +194,9 @@ const StekFinderResults: React.FC<StekFinderResultsProps> = ({ results, isLoadin
               <div className="relative">
                 <img
                   src={result.imageUrl}
-                  alt="Geanalyseerde foto"
+                  alt={`Vislocatie analyse: ${result.location?.name || 'onbekende locatie'}`}
                   className="rounded-lg w-full h-auto object-cover max-h-[400px]"
+                  loading="lazy"
                 />
               </div>
               <div className="space-y-4">

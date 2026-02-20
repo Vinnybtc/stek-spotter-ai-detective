@@ -251,16 +251,10 @@ export const useStekFinder = () => {
 
       const data = await response.json();
 
-      // Check of het een refund/fun response is
+      // Check of het een refund/fun response is (API error, niet inhoudelijk)
       if (data.refund) {
         setFunMessage(data.fun_response || 'Oeps, dat ging niet helemaal goed. Je credit is terug!');
         // Geen credit aftrekken
-        return;
-      }
-
-      if (data.fun_response && data.confidence === 0) {
-        setFunMessage(data.fun_response);
-        // Geen credit aftrekken bij confidence 0
         return;
       }
 

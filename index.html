@@ -3,27 +3,142 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>StekFinder - Jouw geheime visplekdetective</title>
-    <meta name="description" content="Upload een visfoto en onze AI vindt de exacte locatie. Herkenningspunten, vegetatie en watertype — allemaal automatisch geanalyseerd." />
+    <title>StekFinder - Vind de visplek van elke foto met AI</title>
+    <meta name="description" content="Upload een visfoto en onze AI vindt de exacte vislocatie. Herkenningspunten, vegetatie en watertype automatisch geanalyseerd. Werkt met vangstfoto's en stekfoto's." />
+    <link rel="canonical" href="https://stekfinder.nl/" />
 
-    <meta property="og:title" content="StekFinder - Jouw geheime visplekdetective" />
-    <meta property="og:description" content="Upload een visfoto en onze AI vindt de exacte locatie. Herkenningspunten, vegetatie en watertype — allemaal automatisch geanalyseerd." />
+    <!-- Open Graph -->
+    <meta property="og:title" content="StekFinder - Vind de visplek van elke foto met AI" />
+    <meta property="og:description" content="Upload een visfoto en onze AI vindt de exacte locatie. Herkenningspunten, vegetatie en watertype — automatisch geanalyseerd." />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://stekfinder.nl" />
+    <meta property="og:url" content="https://stekfinder.nl/" />
+    <meta property="og:locale" content="nl_NL" />
+    <meta property="og:site_name" content="StekFinder" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="StekFinder - Jouw geheime visplekdetective" />
+    <meta name="twitter:title" content="StekFinder - Vind de visplek van elke foto met AI" />
     <meta name="twitter:description" content="Upload een visfoto en onze AI vindt de exacte locatie." />
 
+    <!-- Geo / Language -->
+    <meta name="geo.region" content="NL" />
+    <meta name="geo.placename" content="Nederland" />
+    <link rel="alternate" hreflang="nl" href="https://stekfinder.nl/" />
+    <link rel="alternate" hreflang="x-default" href="https://stekfinder.nl/" />
+
+    <!-- Mobile -->
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>" />
 
+    <!-- Robots -->
+    <meta name="robots" content="index, follow" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "StekFinder",
+      "url": "https://stekfinder.nl",
+      "description": "AI-gestuurde visplekherkenning. Upload een foto en vind de exacte vislocatie in Nederland.",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "Web",
+      "inLanguage": "nl",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "StekFinder",
+        "url": "https://stekfinder.nl"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "Hoe vind je een visplek met StekFinder",
+      "description": "In 3 stappen de vislocatie van elke foto vinden met AI-beeldherkenning",
+      "inLanguage": "nl",
+      "step": [
+        {
+          "@type": "HowToStep",
+          "position": 1,
+          "name": "Upload je foto",
+          "text": "Sleep je visfoto in de app of selecteer hem uit je galerij. Werkt met vangstfoto's, stekfoto's en screenshots."
+        },
+        {
+          "@type": "HowToStep",
+          "position": 2,
+          "name": "AI analyseert",
+          "text": "Onze AI herkent water, vegetatie, bruggen en andere herkenningspunten om de locatie te bepalen."
+        },
+        {
+          "@type": "HowToStep",
+          "position": 3,
+          "name": "Locatie gevonden",
+          "text": "Bekijk de precieze locatie op de satellietkaart met confidence score en open direct in Google Maps."
+        }
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Hoe werkt StekFinder?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Upload een foto van een vislocatie of vangst. Onze AI analyseert herkenningspunten, vegetatie en watertype om de exacte locatie te bepalen en toont deze op een satellietkaart."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Werkt StekFinder met foto's van vissen?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ja! StekFinder analyseert de achtergrond van visfoto's om de locatie te vinden. Hoe meer omgeving zichtbaar is, hoe nauwkeuriger de analyse."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is StekFinder gratis?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "StekFinder is momenteel in beta. Je krijgt dagelijks 3 gratis analyses. Bij negatieve feedback krijg je je credit terug."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Welke foto's werken het beste?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Foto's met zichtbaar water, oevers, bruggen of steigers werken het best. Maar ook vangstfoto's met achtergrond worden geanalyseerd."
+          }
+        }
+      ]
+    }
+    </script>
+
     <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+    <script defer src="https://www.googletagmanager.com/gtag/js?id=G-TVH1MVSB3R"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'GA_MEASUREMENT_ID');
+      gtag('config', 'G-TVH1MVSB3R');
     </script>
   </head>
 

@@ -1,70 +1,67 @@
-const INSTRUCTIONS = `Je bent StekFinder, een hilarische en eerlijke vis- en locatie-analist. Je analyseert foto's van visplekken en probeert de exacte locatie te bepalen.
+const INSTRUCTIONS = `Je bent StekFinder, de beste vislocatie-detective van Nederland. Gebruikers uploaden foto's — vaak vangstfoto's van anderen op social media — en willen weten waar die stek is. Jouw taak: ALTIJD een locatie raden, hoe weinig aanwijzingen er ook zijn.
 
-STAP 1 - BEOORDEEL DE FOTO:
-Bepaal eerst of de foto GENOEG locatie-aanwijzingen bevat om een locatie te bepalen.
+GOUDEN REGEL: JE GEEFT ALTIJD EEN LOCATIE. Nooit weigeren, nooit zeggen "upload een andere foto". Je bent een detective — je werkt met wat je hebt.
 
-ONGESCHIKT voor locatiebepaling (confidence MOET 0 zijn):
-- Foto van alleen een vis (close-up, iemand die een vis vasthoudt, vis op een mat)
-- Selfie met vis zonder herkenbare achtergrond
-- Foto waar de achtergrond wazig/onherkenbaar is
-- Foto van vis op een weegschaal, in een emmer, etc.
-- Foto's zonder water of landschap zichtbaar
+ANALYSEER ALLES:
+1. ACHTERGROND (kijk voorbij de vis!):
+   - Water: kanaal, polder, rivier, plas, meer, sloot, vijver, gracht, zee
+   - Structuren: brug, sluis, steiger, dijk, windmolen, gemaal, stuw
+   - Vegetatie: rietkragen, wilgen, waterlelies, biezen, populieren, riet
+   - Bebouwing, wegen, fietspaden, hoogspanningsmasten, hekken
+   - Tekst/borden: straatnaambordjes, waternamen, visstekbordjes, reclameborden
+   - Landschap: polder = vlak + sloten, Limburg = heuvels, Veluwe = bos + vennen
+2. VIS & CONTEXT:
+   - Vissoort: karper/brasem/snoek/baars = zoetwater NL, zeebaars/harder = kust
+   - Materiaal: karperbedchair = grotere plas, matchhengel = kanaal/polder
+   - Seizoen (vegetatie, kleding, licht)
+   - Unhooking mat op gras = waarschijnlijk plas/meer
+3. SUBTIELE AANWIJZINGEN:
+   - Reflecties in water tonen gebouwen/bomen
+   - Schaduwrichting + vegetatie = breedtegraad
+   - Type gras, grondsoort (klei vs zand vs veen)
+   - Stijl van steiger/beschoeiing (typisch Nederlands vs buitenlands)
 
-Bij ONGESCHIKTE foto's: zet confidence op 0 en geef een GRAPPIGE reactie in fun_response. Voorbeelden:
-- "Mooie vangst! Maar ik ben een locatie-detective, geen vis-detective. Upload een foto van de PLEK waar je vist!"
-- "Die karper houdt z'n bek dicht over waar hij vandaan komt... Probeer een foto van het water/de omgeving!"
-- "Petje af voor die vangst! Maar zonder water op de foto kan ik niks. Ik ben geen vissenherkenner!"
-- "Sick vangst bro! Maar ik heb een foto van de omgeving nodig, niet van de vis zelf."
-- "Die vis weet precies waar hij gevangen is, maar hij praat niet... Upload een foto van je stek!"
+LOCATIEBEPALING:
+- Standaard: Nederland (tenzij duidelijk anders)
+- Coordinaten MOETEN op water of oever liggen, NIET op een straat
+- Kies een plausibele specifieke locatie (echte plas, kanaal of rivier)
+- Bij weinig aanwijzingen: kies het MEEST WAARSCHIJNLIJKE type water in NL
 
-GESCHIKT voor locatiebepaling (ga door naar stap 2):
-- Foto van water (kanaal, rivier, plas, meer, sloot)
-- Landschapsfoto met water zichtbaar
-- Foto vanaf een steiger, oever, of boot
-- Foto waar herkenbare structuren zichtbaar zijn (bruggen, sluizen, etc.)
+CONFIDENCE:
+- 70-100%: Herkenbare locatie, tekst, unieke structuren
+- 40-69%: Watertype + regio herkenbaar
+- 15-39%: Beperkte aanwijzingen, educated guess
+- 5-14%: Nauwelijks aanwijzingen, maar je raadt op basis van context
+- NOOIT 0%: er is altijd iets te raden. Zelfs een karper op een mat = "ergens bij een Nederlandse plas"
 
-STAP 2 - ANALYSEER DE LOCATIE:
-1. Identificeer ALLE visuele aanwijzingen:
-   - Watertype (kanaal, polder, rivier, plas, meer, zee, sloot, vijver, gracht)
-   - Structuren (bruggen, sluizen, steigers, dijken, windmolens, gemalen)
-   - Vegetatie (rietkragen, wilgenbomen, waterlelies, biezen, populieren)
-   - Infrastructuur (wegen, fietspaden, bebouwing, hoogspanningsmasten)
-   - Tekst/borden (straatnaambordjes, waternamen, visstekbordjes)
-   - Landschapskarakter (polder = vlak, Limburg = heuvels, Veluwe = bos)
-2. Bepaal het land
-3. Bepaal de regio/provincie
-4. Probeer de specifieke locatie te bepalen
-5. Zorg dat de coordinaten op WATER liggen, niet op een straat
-
-BELANGRIJK:
-- Schat confidence EERLIJK in. Als je twijfelt: laag houden
-- Coordinaten moeten op water/oever liggen, NIET midden op een weg
-- Nederlandse kenmerken: vlak landschap, kanalen/polders, specifieke brugstijlen
+TOON & STIJL:
+- Spreek de gebruiker aan als visser/hengelaar
+- Gebruik "de stek" (niet "je stuk" of "je plek")
+- Wees enthousiast en behulpzaam
+- Bij lage confidence: wees eerlijk maar geef toch je beste gok
 
 Antwoord UITSLUITEND als geldig JSON:
 {
   "location": {
     "lat": <nummer>,
     "lng": <nummer>,
-    "name": "<waterlichaam/locatie, stad/dorp, provincie>"
+    "name": "<waterlichaam, stad/dorp, provincie>"
   },
-  "confidence": <0-100>,
+  "confidence": <5-100>,
   "analysis": {
-    "landmarks": ["<herkenningspunt 1>", "<herkenningspunt 2>"],
+    "landmarks": ["<aanwijzing 1>", "<aanwijzing 2>"],
     "vegetation": ["<vegetatie 1>", "<vegetatie 2>"],
-    "water_type": "<beschrijving van het type water>"
+    "water_type": "<type water dat je ziet of vermoedt>"
   },
-  "reasoning": "<korte uitleg van je redenering>",
-  "tips": "<vistip voor deze locatie>",
-  "fun_response": "<ALLEEN bij confidence 0: grappige reactie waarom de foto niet geschikt is>"
+  "reasoning": "<je redenering — wat zie je en waarom denk je dat het daar is>",
+  "tips": "<vistip voor deze stek en deze vissoort>"
 }`;
 
 const FUN_FALLBACKS = [
-  "Oeps! Onze AI-visser had even een dutje. Hier is je credit terug!",
-  "Zelfs de beste visser vangt wel eens niks... We konden je foto niet analyseren. Credit terug!",
+  "Oeps! Onze AI had even een hapering. Probeer het nog eens, je credit is terug!",
+  "Zelfs de beste detective heeft soms een off-day. Credit terug, probeer het nog eens!",
   "Onze AI zwom even de verkeerde kant op. Probeer het nog eens, credit is terug!",
-  "De AI beet niet toe bij deze foto. Je credit krijg je terug, probeer een andere foto!",
-  "Hmm, deze was een lastige! Onze AI bleef met lege handen. Credit terug!",
+  "Hmm, er ging iets mis bij het analyseren. Je credit krijg je terug!",
 ];
 
 function getRandomFallback() {
@@ -73,6 +70,39 @@ function getRandomFallback() {
 
 const SUPABASE_URL = 'https://vwqwpfimljkgycdhblwx.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
+
+async function sendTelegramPhoto(photoUrl, caption) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
+
+  try {
+    if (photoUrl) {
+      await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          photo: photoUrl,
+          caption,
+          parse_mode: 'HTML',
+        }),
+      });
+    } else {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: caption,
+          parse_mode: 'HTML',
+        }),
+      });
+    }
+  } catch (e) {
+    console.error('Telegram error:', e);
+  }
+}
 
 async function savePhoto(imageBase64) {
   if (!SUPABASE_KEY) return null;
@@ -117,7 +147,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'OpenAI API key niet geconfigureerd.' });
   }
 
-  let userText = INSTRUCTIONS + '\n\nAnalyseer deze visfoto en bepaal de locatie.';
+  let userText = INSTRUCTIONS + '\n\nAnalyseer deze foto en bepaal de stek.';
 
   if (exifGps) {
     userText += `\n\nEXTRA CONTEXT - EXIF GPS data gevonden in de foto:\nLatitude: ${exifGps.latitude}\nLongitude: ${exifGps.longitude}\nBevestig of de visuele inhoud overeenkomt met deze coordinaten.`;
@@ -131,7 +161,7 @@ export default async function handler(req, res) {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 50000);
+      const timeout = setTimeout(() => controller.abort(), 120000);
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -141,7 +171,7 @@ export default async function handler(req, res) {
         },
         signal: controller.signal,
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'o3',
           messages: [
             {
               role: 'user',
@@ -157,8 +187,7 @@ export default async function handler(req, res) {
               ],
             },
           ],
-          max_tokens: 1500,
-          temperature: 0.3,
+          max_completion_tokens: 4096,
           response_format: { type: 'json_object' },
         }),
       });
@@ -168,7 +197,7 @@ export default async function handler(req, res) {
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         console.error('OpenAI API error:', JSON.stringify(err));
-        if (attempt === 0) continue; // retry
+        if (attempt === 0) continue;
         return res.status(200).json({
           refund: true,
           fun_response: getRandomFallback(),
@@ -190,13 +219,21 @@ export default async function handler(req, res) {
       if (choice.message.refusal || choice.finish_reason === 'content_filter') {
         return res.status(200).json({
           refund: true,
-          fun_response: "Deze foto konden we niet analyseren. Misschien een andere proberen? Je credit is terug!",
+          fun_response: "Deze foto konden we niet analyseren. Probeer een andere foto, je credit is terug!",
         });
       }
 
       const result = JSON.parse(choice.message.content);
       const photoUrl = await photoUrlPromise;
       if (photoUrl) result.photoUrl = photoUrl;
+
+      // Telegram notificatie direct vanuit server
+      const tgCaption = `🔍 <b>Nieuwe analyse!</b>\n\n` +
+        `📍 ${result.location?.name || 'Onbekend'}\n` +
+        `📊 ${result.confidence || 0}% zekerheid\n` +
+        `⏰ ${new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' })}`;
+      sendTelegramPhoto(photoUrl, tgCaption).catch(() => {});
+
       return res.status(200).json(result);
 
     } catch (error) {
