@@ -84,7 +84,7 @@ function loadCredits(): CreditsState {
     return { ...state, lastVisitDate: today };
   } catch {
     return {
-      remaining: DAILY_FREE + 1, // +1 bonus voor eerste bezoek
+      remaining: DAILY_FREE,
       lastResetDate: getTodayStr(),
       streak: 1,
       lastVisitDate: getTodayStr(),
