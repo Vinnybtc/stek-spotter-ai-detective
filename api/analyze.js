@@ -150,7 +150,7 @@ export default async function handler(req, res) {
   let userText = INSTRUCTIONS + '\n\nAnalyseer deze foto en bepaal de stek.';
 
   if (exifGps) {
-    userText += `\n\nEXTRA CONTEXT - EXIF GPS data gevonden in de foto:\nLatitude: ${exifGps.latitude}\nLongitude: ${exifGps.longitude}\nBevestig of de visuele inhoud overeenkomt met deze coordinaten.`;
+    userText += `\n\n⚠️ EXACTE GPS COORDINATEN GEVONDEN IN DE FOTO (EXIF data):\nLatitude: ${exifGps.latitude}\nLongitude: ${exifGps.longitude}\n\nDeze coordinaten komen rechtstreeks uit de foto-metadata. Gebruik deze als de EXACTE locatie. Zet confidence op minimaal 90%. Beschrijf in je reasoning wat je op de foto ziet en bevestig dat het overeenkomt met deze coordinaten. Geef de dichtstbijzijnde waternaam als location name.`;
   }
 
   if (exifDate) {
