@@ -96,7 +96,7 @@ const ShareButton = ({ result }: { result: StekResult }) => {
   const [shared, setShared] = useState(false);
 
   const handleShare = async () => {
-    const text = `Ik heb een visplek ontdekt met StekFinder!\n${result.location.name} (${result.confidence}% zekerheid)\nhttps://www.google.com/maps/@${result.location.lat},${result.location.lng},17z/data=!3m1!1e1`;
+    const text = `Ik heb een visplek ontdekt met StekFinder!\n${result.location.name} (${result.confidence}% zekerheid)\nhttps://www.google.com/maps/search/?api=1&query=${result.location.lat},${result.location.lng}`;
 
     if (navigator.share) {
       try {

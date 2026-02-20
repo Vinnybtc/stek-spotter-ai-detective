@@ -105,7 +105,7 @@ const LocationMap = ({ lat, lng, name, confidence }: LocationMapProps) => {
         </button>
       </div>
       <a
-        href={`https://www.google.com/maps/@${lat},${lng},17z/data=!3m1!1e1`}
+        href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
         target="_blank"
         rel="noopener noreferrer"
         className="block text-center py-2 bg-gray-800/80 text-sky-400 text-sm hover:bg-gray-700/80 transition-colors"
