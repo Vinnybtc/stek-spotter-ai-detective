@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Sparkles, Mail, Check } from 'lucide-react';
+import { X, Check, Mail } from 'lucide-react';
 
 interface WaitlistModalProps {
   open: boolean;
@@ -11,7 +11,6 @@ interface WaitlistModalProps {
 const WaitlistModal = ({ open, onClose }: WaitlistModalProps) => {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [message, setMessage] = useState('');
 
   if (!open) return null;
 
@@ -21,28 +20,23 @@ const WaitlistModal = ({ open, onClose }: WaitlistModalProps) => {
 
     setStatus('loading');
     try {
-      const res = await fetch('/api/waitlist', {
+      await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json();
       setStatus('success');
-      setMessage(data.message || 'Je bent aangemeld!');
       localStorage.setItem('stekfinder_waitlisted', 'true');
     } catch {
       setStatus('error');
-      setMessage('Er ging iets mis. Probeer het later opnieuw.');
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative bg-gray-900 border border-white/10 rounded-2xl p-8 max-w-md w-full animate-fade-in-up shadow-2xl">
+      <div className="relative bg-gray-900 border border-white/10 rounded-2xl p-8 max-w-sm w-full animate-fade-in-up shadow-2xl">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
@@ -51,48 +45,36 @@ const WaitlistModal = ({ open, onClose }: WaitlistModalProps) => {
         </button>
 
         {status === 'success' ? (
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10 border border-green-500/20 mb-4">
-              <Check className="h-8 w-8 text-green-400" />
+          <div className="text-center py-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-500/10 border border-green-500/20 mb-4">
+              <Check className="h-7 w-7 text-green-400" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Je staat op de lijst!</h2>
-            <p className="text-white/70">{message}</p>
-            <p className="text-sm text-white/50 mt-4">
-              We selecteren elke week een kleine groep vissers die toegang krijgen.
-              Hoe eerder je je aanmeldt, hoe sneller je aan de beurt bent.
+            <h2 className="text-xl font-bold text-white mb-2">Top, je staat erop!</h2>
+            <p className="text-white/60 text-sm">
+              We mailen je zodra StekFinder live gaat. Jij bent als eerst aan de beurt.
             </p>
-            <Button
-              onClick={onClose}
-              className="mt-6 bg-sky-500 hover:bg-sky-600 text-white"
-            >
+            <Button onClick={onClose} className="mt-6 bg-sky-500 hover:bg-sky-600 text-white">
               Sluiten
             </Button>
           </div>
         ) : (
-          <>
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-500/10 border border-sky-500/20 mb-4">
-                <Sparkles className="h-8 w-8 text-sky-400" />
-              </div>
-              <h2 className="text-2xl font-bold text-white">
-                Credits op voor vandaag
-              </h2>
-              <p className="text-white/70 mt-2">
-                StekFinder is momenteel in exclusieve b&egrave;ta.
-                Laat je e-mail achter en we nodigen je uit voor onbeperkt gebruik.
-              </p>
-            </div>
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-white mb-1">Credits op voor vandaag</h2>
+            <p className="text-white/60 text-sm mb-5">
+              Laat je e-mail achter en wij laten je als eerst weten wanneer StekFinder live gaat.
+            </p>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
                 <Input
                   type="email"
-                  placeholder="jouw@email.nl"
+                  placeholder="je@email.nl"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-11 bg-black/30 border-white/10 text-white placeholder:text-white/30 h-12"
+                  className="pl-11 bg-black/30 border-white/10 text-white placeholder:text-white/30 h-12 text-base"
                   required
+                  autoFocus
                 />
               </div>
               <Button
@@ -100,22 +82,18 @@ const WaitlistModal = ({ open, onClose }: WaitlistModalProps) => {
                 disabled={status === 'loading' || !email.includes('@')}
                 className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold h-12"
               >
-                {status === 'loading' ? 'Aanmelden...' : 'Zet me op de lijst'}
+                {status === 'loading' ? 'Even geduld...' : 'Houd me op de hoogte'}
               </Button>
-              {status === 'error' && (
-                <p className="text-red-400 text-sm text-center">{message}</p>
-              )}
             </form>
 
-            <div className="mt-6 text-center space-y-1">
-              <p className="text-xs text-white/40">
-                Beperkte plekken beschikbaar. Geen spam, beloofd.
-              </p>
-              <p className="text-xs text-sky-400/60">
-                Je dagelijkse credits worden morgen weer aangevuld.
-              </p>
-            </div>
-          </>
+            {status === 'error' && (
+              <p className="text-red-400 text-sm mt-3">Er ging iets mis, probeer het nog eens.</p>
+            )}
+
+            <p className="text-xs text-white/30 mt-4">
+              Geen spam. Morgen heb je weer 3 credits.
+            </p>
+          </div>
         )}
       </div>
     </div>
