@@ -227,12 +227,12 @@ export default async function handler(req, res) {
       const photoUrl = await photoUrlPromise;
       if (photoUrl) result.photoUrl = photoUrl;
 
-      // Telegram notificatie direct vanuit server
+      // Telegram notificatie — MOET awaiten anders sluit Vercel de functie
       const tgCaption = `🔍 <b>Nieuwe analyse!</b>\n\n` +
         `📍 ${result.location?.name || 'Onbekend'}\n` +
         `📊 ${result.confidence || 0}% zekerheid\n` +
         `⏰ ${new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' })}`;
-      sendTelegramPhoto(photoUrl, tgCaption).catch(() => {});
+      await sendTelegramPhoto(photoUrl, tgCaption);
 
       return res.status(200).json(result);
 
