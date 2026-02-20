@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -9,19 +9,34 @@ interface LocationMapProps {
   confidence: number;
 }
 
+const LAYERS = {
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+  },
+  streets: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap contributors',
+  },
+};
+
 const LocationMap = ({ lat, lng, name, confidence }: LocationMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const [view, setView] = useState<'satellite' | 'streets'>('satellite');
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    const map = L.map(mapRef.current).setView([lat, lng], 14);
+    const map = L.map(mapRef.current).setView([lat, lng], 15);
     mapInstanceRef.current = map;
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
+    const layer = L.tileLayer(LAYERS.satellite.url, {
+      attribution: LAYERS.satellite.attribution,
+      maxZoom: 19,
     }).addTo(map);
+    tileLayerRef.current = layer;
 
     const icon = L.divIcon({
       html: `<div style="
@@ -48,7 +63,6 @@ const LocationMap = ({ lat, lng, name, confidence }: LocationMapProps) => {
       )
       .openPopup();
 
-    // Confidence radius circle
     const radius = Math.max(200, (100 - confidence) * 50);
     L.circle([lat, lng], {
       radius,
@@ -62,19 +76,41 @@ const LocationMap = ({ lat, lng, name, confidence }: LocationMapProps) => {
     return () => {
       map.remove();
       mapInstanceRef.current = null;
+      tileLayerRef.current = null;
     };
   }, [lat, lng, name, confidence]);
 
+  const toggleView = () => {
+    const next = view === 'satellite' ? 'streets' : 'satellite';
+    setView(next);
+    if (mapInstanceRef.current && tileLayerRef.current) {
+      mapInstanceRef.current.removeLayer(tileLayerRef.current);
+      const newLayer = L.tileLayer(LAYERS[next].url, {
+        attribution: LAYERS[next].attribution,
+        maxZoom: 19,
+      }).addTo(mapInstanceRef.current);
+      tileLayerRef.current = newLayer;
+    }
+  };
+
   return (
     <div className="rounded-lg overflow-hidden border border-white/10">
-      <div ref={mapRef} style={{ height: '300px', width: '100%' }} />
+      <div className="relative">
+        <div ref={mapRef} style={{ height: '350px', width: '100%' }} />
+        <button
+          onClick={toggleView}
+          className="absolute top-3 right-3 z-[1000] bg-gray-900/80 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-lg border border-white/20 hover:bg-gray-800 transition-colors"
+        >
+          {view === 'satellite' ? 'Stratenkaart' : 'Satelliet'}
+        </button>
+      </div>
       <a
-        href={`https://www.google.com/maps?q=${lat},${lng}`}
+        href={`https://www.google.com/maps/@${lat},${lng},17z/data=!3m1!1e1`}
         target="_blank"
         rel="noopener noreferrer"
         className="block text-center py-2 bg-gray-800/80 text-sky-400 text-sm hover:bg-gray-700/80 transition-colors"
       >
-        Bekijk op Google Maps &rarr;
+        Bekijk op Google Maps (satelliet) &rarr;
       </a>
     </div>
   );
