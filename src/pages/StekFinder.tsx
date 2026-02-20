@@ -3,8 +3,8 @@ import StekFinderInput from '@/components/stek-finder/StekFinderInput';
 import StekFinderResults from '@/components/stek-finder/StekFinderResults';
 import SearchHistory from '@/components/stek-finder/SearchHistory';
 import Confetti from '@/components/stek-finder/Confetti';
+import WaitlistModal from '@/components/stek-finder/WaitlistModal';
 import { useStekFinder } from '@/hooks/useStekFinder';
-import { Fish } from 'lucide-react';
 
 const StekFinder = () => {
   const {
@@ -22,6 +22,8 @@ const StekFinder = () => {
     history,
     clearHistory,
     totalAnalyses,
+    showWaitlist,
+    setShowWaitlist,
   } = useStekFinder();
 
   const showConfetti = results.length > 0 && results[0].confidence >= 75;
@@ -29,16 +31,18 @@ const StekFinder = () => {
   return (
     <PageLayout>
       <Confetti trigger={showConfetti} />
+      <WaitlistModal open={showWaitlist} onClose={() => setShowWaitlist(false)} />
+
       <div className="text-center">
         <h1 className="text-5xl md:text-6xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-orange-400">
           StekFinder
         </h1>
         <p className="mt-2 text-lg text-white/70">Jouw geheime visplekdetective.</p>
         <div className="mt-6 bg-black/20 border border-white/10 rounded-2xl p-4 max-w-2xl mx-auto text-center">
-          <p className="font-bold text-sky-400">&#10024; Nieuw &amp; in B&egrave;ta &#10024;</p>
+          <p className="font-bold text-sky-400">&#10024; Exclusieve B&egrave;ta &#10024;</p>
           <p className="mt-2 text-white/80">
-            Upload een visfoto en onze AI probeert de exacte locatie te achterhalen.
-            We analyseren herkenningspunten, vegetatie en watertype om jouw stek te vinden.
+            Upload een foto van je visplek en onze AI achterhaalt de exacte locatie.
+            Herkenningspunten, vegetatie en watertype — automatisch geanalyseerd.
           </p>
         </div>
       </div>

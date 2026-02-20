@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import StekFinder from "./pages/StekFinder";
+import Admin from "./pages/Admin";
 import { ThemeProvider } from "./components/theme-provider";
 
 const queryClient = new QueryClient();
@@ -21,7 +22,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/stek-finder" element={<StekFinder />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

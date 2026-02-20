@@ -163,6 +163,14 @@ async function reverseGeocode(lat: number, lng: number) {
   }
 }
 
+function trackEvent(event: string, data?: Record<string, unknown>) {
+  fetch('/api/track', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event, data }),
+  }).catch(() => {}); // fire and forget
+}
+
 // ── Hook ─────────────────────────────────────────────────────────
 export const useStekFinder = () => {
   const [results, setResults] = useState<StekResult[]>([]);
@@ -174,6 +182,7 @@ export const useStekFinder = () => {
   const [creditsState, setCreditsState] = useState<CreditsState>(loadCredits);
   const [shouldHighlightInput, setShouldHighlightInput] = useState(true);
   const [history, setHistory] = useState<StekResult[]>(loadHistory);
+  const [showWaitlist, setShowWaitlist] = useState(false);
 
   useEffect(() => {
     saveCredits(creditsState);
@@ -208,7 +217,7 @@ export const useStekFinder = () => {
     }
 
     if (creditsState.remaining <= 0) {
-      setError('Je hebt geen credits meer vandaag. Kom morgen terug voor nieuwe credits!');
+      setShowWaitlist(true);
       return;
     }
 
@@ -286,6 +295,13 @@ export const useStekFinder = () => {
 
       setResults([result]);
 
+      // Track analyse
+      trackEvent('analysis_complete', {
+        location: data.location.name,
+        confidence: result.confidence,
+        source,
+      });
+
       const newHistory = [result, ...history].slice(0, MAX_HISTORY);
       setHistory(newHistory);
       saveHistory(newHistory);
@@ -307,6 +323,13 @@ export const useStekFinder = () => {
     if (feedback === 'down') {
       refundCredit();
     }
+
+    // Track feedback
+    const result = results.find(r => r.id === resultId);
+    trackEvent('feedback', {
+      type: feedback,
+      location: result?.location?.name,
+    });
 
     // Update history
     setHistory(prev => {
@@ -344,6 +367,8 @@ export const useStekFinder = () => {
     user,
     history,
     clearHistory,
+    showWaitlist,
+    setShowWaitlist,
     totalAnalyses: creditsState.totalAnalyses,
   };
 };
