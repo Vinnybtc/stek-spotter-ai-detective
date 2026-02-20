@@ -228,25 +228,85 @@ export const useStekFinder = () => {
     setShouldHighlightInput(false);
 
     try {
-      // Stap 1: EXIF data extractie
-      setLoadingStep('GPS-data zoeken in foto...');
+      setLoadingStep('Foto wordt verwerkt...');
       const exif = await extractExif(file);
 
-      // Stap 2: AI analyse
+      // ── SNELLE ROUTE: EXIF GPS aanwezig → instant resultaat ──
       if (exif.gps) {
-        setLoadingStep('GPS gevonden! AI bevestigt de exacte locatie...');
-      } else {
-        setLoadingStep('AI analyseert de foto — dit duurt 15-30 seconden...');
+        setLoadingStep('Locatie gevonden! Gegevens ophalen...');
+
+        const lat = exif.gps.latitude;
+        const lng = exif.gps.longitude;
+        const geo = await reverseGeocode(lat, lng);
+
+        // Credit aftrekken
+        setCreditsState(prev => ({
+          ...prev,
+          remaining: prev.remaining - 1,
+          totalAnalyses: prev.totalAnalyses + 1,
+        }));
+
+        const locationName = geo?.water
+          ? `${geo.water}, ${geo.address?.city || geo.address?.municipality || ''}`
+          : geo?.displayName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
+        const result: StekResult = {
+          id: Date.now(),
+          imageUrl: URL.createObjectURL(file),
+          location: { lat, lng, name: locationName },
+          confidence: 95,
+          analysis: {
+            landmarks: ['Locatie uit foto-metadata'],
+            vegetation: [],
+            water_type: geo?.water || 'Onbekend',
+          },
+          tips: 'Check de satellietkaart voor de exacte oeverstructuur en toegangspunten.',
+          reasoning: `De exacte coördinaten zijn uit de foto gehaald. Locatie: ${locationName}.`,
+          reverseGeocode: geo ? { displayName: geo.displayName, water: geo.water } : undefined,
+          source: 'exif+ai',
+          timestamp: Date.now(),
+        };
+
+        setResults([result]);
+
+        trackEvent('analysis_complete', {
+          location: locationName,
+          confidence: 95,
+          source: 'exif',
+        });
+
+        const newHistory = [result, ...history].slice(0, MAX_HISTORY);
+        setHistory(newHistory);
+        saveHistory(newHistory);
+
+        // Fire-and-forget: foto opslaan + Telegram via de API
+        const imageBase64 = await resizeAndConvertToBase64(file);
+        fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64, exifGps: exif.gps }),
+        }).catch(() => {});
+
+        return;
       }
 
-      // Na 10 seconden: update bericht
-      const stepTimer = setTimeout(() => {
-        setLoadingStep('Achtergrond, water en herkenningspunten worden geanalyseerd...');
-      }, 10000);
-      // Na 20 seconden: nog een update
-      const stepTimer2 = setTimeout(() => {
-        setLoadingStep('Bijna klaar — locatie wordt bepaald...');
-      }, 20000);
+      // ── AI ROUTE: geen GPS, AI moet raden ──
+      setLoadingStep('De detective gaat aan de slag...');
+
+      const loadingMessages = [
+        'Water en oever worden geanalyseerd...',
+        'Herkenningspunten zoeken...',
+        'Vegetatie en landschap bekijken...',
+        'Locatie wordt bepaald...',
+        'Bijna klaar...',
+      ];
+      let msgIndex = 0;
+      const stepTimer = setInterval(() => {
+        if (msgIndex < loadingMessages.length) {
+          setLoadingStep(loadingMessages[msgIndex]);
+          msgIndex++;
+        }
+      }, 6000);
 
       const imageBase64 = await resizeAndConvertToBase64(file);
 
@@ -255,19 +315,17 @@ export const useStekFinder = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           imageBase64,
-          exifGps: exif.gps,
+          exifGps: null,
           exifDate: exif.date ? new Date(exif.date).toISOString() : null,
         }),
       });
 
-      clearTimeout(stepTimer);
-      clearTimeout(stepTimer2);
+      clearInterval(stepTimer);
       const data = await response.json();
 
-      // Check of het een refund/fun response is (API error, niet inhoudelijk)
+      // Check of het een refund/fun response is (API error)
       if (data.refund) {
         setFunMessage(data.fun_response || 'Oeps, dat ging niet helemaal goed. Je credit is terug!');
-        // Geen credit aftrekken
         return;
       }
 
@@ -278,35 +336,32 @@ export const useStekFinder = () => {
         totalAnalyses: prev.totalAnalyses + 1,
       }));
 
-      // Stap 3: Reverse geocoding
+      // Reverse geocoding
       setLoadingStep('Locatiegegevens ophalen...');
       const lat = data.location.lat;
       const lng = data.location.lng;
       const geo = await reverseGeocode(lat, lng);
 
-      const source = exif.gps ? 'exif+ai' : 'ai';
-
       const result: StekResult = {
         id: Date.now(),
         imageUrl: URL.createObjectURL(file),
         location: data.location,
-        confidence: exif.gps ? Math.max(data.confidence, 90) : data.confidence,
+        confidence: data.confidence,
         analysis: data.analysis,
         tips: data.tips,
         reasoning: data.reasoning,
         fun_response: data.fun_response,
         reverseGeocode: geo ? { displayName: geo.displayName, water: geo.water } : undefined,
-        source,
+        source: 'ai',
         timestamp: Date.now(),
       };
 
       setResults([result]);
 
-      // Track analyse
       trackEvent('analysis_complete', {
         location: data.location.name,
         confidence: result.confidence,
-        source,
+        source: 'ai',
         photoUrl: data.photoUrl || null,
       });
 
@@ -314,7 +369,6 @@ export const useStekFinder = () => {
       setHistory(newHistory);
       saveHistory(newHistory);
     } catch (err) {
-      // Bij ELKE error: geef credit terug en toon leuke boodschap
       setFunMessage('Oeps! Er ging iets mis met de analyse. Je credit is terug, probeer het nog eens!');
     } finally {
       setIsLoading(false);
