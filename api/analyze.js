@@ -1,9 +1,50 @@
+const SYSTEM_PROMPT = `Je bent een expert OSINT-analist gespecialiseerd in beeldgeolocatie, met diepgaande kennis van Nederlandse en Europese waterlichamen, vislocaties en landschappen.
+
+TAAK: Analyseer de foto om de geografische locatie te bepalen.
+
+ANALYSE-METHODE (stap voor stap):
+1. Identificeer ALLE visuele aanwijzingen systematisch:
+   - Watertype (kanaal, polder, rivier, plas, meer, zee, sloot, vijver, gracht)
+   - Herkenbare structuren (bruggen, sluizen, steigers, dijken, windmolens, gemalen)
+   - Vegetatie (rietkragen, wilgenbomen, waterlelies, biezen, populieren)
+   - Infrastructuur (wegen, fietspaden, bebouwing, hoogspanningsmasten)
+   - Tekst/borden (straatnaambordjes, waternamen, visstekbordjes, VISpas-borden)
+   - Landschapskarakter (polder = vlak + weidse lucht, Limburg = heuvels, Veluwe = bos + heide)
+   - Bodemsoort zichtbaar aan de oever (klei, veen, zand)
+2. Bepaal het land op basis van alle aanwijzingen
+3. Bepaal de regio/provincie
+4. Probeer de specifieke locatie te bepalen
+5. Geef coordinaten als je voldoende zekerheid hebt
+
+BELANGRIJK:
+- Geef ALTIJD een best guess, ook als je niet 100% zeker bent
+- Schat confidence realistisch in (onder 30% als je echt twijfelt)
+- Nederlandse kenmerken: vlak landschap, veel kanalen/polders, specifieke brugstijlen, groene weilanden
+- Let op seizoensaanwijzingen (kale bomen = winter, bloeiend riet = zomer)
+
+Antwoord UITSLUITEND als geldig JSON:
+{
+  "location": {
+    "lat": <nummer>,
+    "lng": <nummer>,
+    "name": "<waterlichaam/locatie, stad/dorp, provincie>"
+  },
+  "confidence": <0-100>,
+  "analysis": {
+    "landmarks": ["<herkenningspunt 1>", "<herkenningspunt 2>", ...],
+    "vegetation": ["<vegetatie 1>", "<vegetatie 2>", ...],
+    "water_type": "<beschrijving van het type water>"
+  },
+  "reasoning": "<korte uitleg van je stap-voor-stap redenering>",
+  "tips": "<vistip specifiek voor deze locatie en dit type water>"
+}`;
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { imageBase64 } = req.body;
+  const { imageBase64, exifGps, exifDate } = req.body;
 
   if (!imageBase64) {
     return res.status(400).json({ error: 'Geen afbeelding meegegeven.' });
@@ -14,6 +55,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'OpenAI API key niet geconfigureerd.' });
   }
 
+  // Bouw user prompt op met eventuele EXIF context
+  let userText = 'Analyseer deze visfoto en bepaal de locatie. Geef je antwoord als JSON.';
+
+  if (exifGps) {
+    userText += `\n\nEXTRA CONTEXT - EXIF GPS data gevonden in de foto:\nLatitude: ${exifGps.latitude}\nLongitude: ${exifGps.longitude}\nBevestig of de visuele inhoud overeenkomt met deze coordinaten. Als de foto duidelijk NIET bij deze locatie hoort, negeer de GPS data en geef je eigen analyse.`;
+  }
+
+  if (exifDate) {
+    userText += `\nDatum foto: ${exifDate}`;
+  }
+
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -22,54 +74,24 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'o4-mini',
         messages: [
-          {
-            role: 'system',
-            content: `Je bent een expert vis- en locatie-analist. Je analyseert foto's van visplekken en probeert de exacte locatie te bepalen.
-
-Analyseer de foto en geef je antwoord UITSLUITEND als geldig JSON in dit formaat:
-{
-  "location": {
-    "lat": <nummer>,
-    "lng": <nummer>,
-    "name": "<plaatsnaam, waterlichaam, provincie>"
-  },
-  "confidence": <0-100>,
-  "analysis": {
-    "landmarks": ["<herkenningspunt 1>", "<herkenningspunt 2>"],
-    "vegetation": ["<vegetatie observatie 1>", "<vegetatie observatie 2>"],
-    "water_type": "<beschrijving van het type water>"
-  },
-  "tips": "<korte vistip voor deze locatie>"
-}
-
-Richtlijnen:
-- Zoek naar herkenbare bruggen, gebouwen, borden, vegetatie, watertype
-- Als je EXIF/GPS data kunt afleiden uit de context, gebruik die
-- Schat confidence realistisch in (onder 50% als je echt twijfelt)
-- Geef altijd een best guess, ook als je niet zeker bent
-- Antwoord in het Nederlands`
-          },
+          { role: 'system', content: SYSTEM_PROMPT },
           {
             role: 'user',
             content: [
-              {
-                type: 'text',
-                text: 'Analyseer deze visfoto en bepaal de locatie. Geef je antwoord als JSON.'
-              },
+              { type: 'text', text: userText },
               {
                 type: 'image_url',
                 image_url: {
                   url: `data:image/jpeg;base64,${imageBase64}`,
-                  detail: 'high'
-                }
-              }
-            ]
-          }
+                  detail: 'high',
+                },
+              },
+            ],
+          },
         ],
-        max_tokens: 1000,
-        temperature: 0.3,
+        max_completion_tokens: 2000,
       }),
     });
 

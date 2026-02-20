@@ -9,13 +9,14 @@ import { UploadCloud, X, FileImage } from 'lucide-react';
 interface StekFinderInputProps {
     onSearch: (file: File | null) => void;
     isLoading: boolean;
+    loadingStep?: string;
     onClear: () => void;
     user: StekUser;
     credits: number;
     shouldHighlight: boolean;
 }
 
-const StekFinderInput = ({ onSearch, isLoading, onClear, user, credits, shouldHighlight }: StekFinderInputProps) => {
+const StekFinderInput = ({ onSearch, isLoading, loadingStep, onClear, user, credits, shouldHighlight }: StekFinderInputProps) => {
     const [file, setFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -104,7 +105,7 @@ const StekFinderInput = ({ onSearch, isLoading, onClear, user, credits, shouldHi
                     {isLoading ? (
                         <>
                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                            Analyseren...
+                            {loadingStep || 'Analyseren...'}
                         </>
                     ) : 'Vind de Stek!'}
                 </Button>

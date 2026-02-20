@@ -3,7 +3,7 @@ import { StekResult } from '@/hooks/useStekFinder';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Target, Leaf, Droplet, Lightbulb } from 'lucide-react';
+import { MapPin, Target, Leaf, Droplet, Lightbulb, Brain, Navigation, Satellite } from 'lucide-react';
 import LocationMap from './LocationMap';
 
 interface StekFinderResultsProps {
@@ -20,6 +20,23 @@ const ConfidenceBadge = ({ confidence }: { confidence: number }) => {
   return (
     <Badge variant="secondary" className={`text-lg ${color} backdrop-blur-sm text-white`}>
       {confidence}% Zeker
+    </Badge>
+  );
+};
+
+const SourceBadge = ({ source }: { source: string }) => {
+  if (source === 'exif+ai') {
+    return (
+      <Badge variant="outline" className="text-xs border-green-500/50 text-green-400">
+        <Satellite className="h-3 w-3 mr-1" />
+        GPS + AI
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-xs border-sky-500/50 text-sky-400">
+      <Brain className="h-3 w-3 mr-1" />
+      AI analyse
     </Badge>
   );
 };
@@ -65,12 +82,22 @@ const StekFinderResults: React.FC<StekFinderResultsProps> = ({ results, isLoadin
         <Card key={result.id} className="bg-black/20 border-white/10 text-white overflow-hidden animate-fade-in-up">
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <CardTitle className="flex items-center text-2xl">
-                <MapPin className="mr-3 text-sky-400 shrink-0" />
-                {result.location.name}
-              </CardTitle>
+              <div className="flex items-center gap-3 flex-wrap">
+                <CardTitle className="flex items-center text-2xl">
+                  <MapPin className="mr-3 text-sky-400 shrink-0" />
+                  {result.location.name}
+                </CardTitle>
+                <SourceBadge source={result.source} />
+              </div>
               <ConfidenceBadge confidence={result.confidence} />
             </div>
+            {/* Reverse geocode adres */}
+            {result.reverseGeocode && (
+              <div className="flex items-center gap-2 text-sm text-white/50 mt-1 ml-9">
+                <Navigation className="h-3 w-3" />
+                {result.reverseGeocode.displayName}
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
@@ -114,6 +141,17 @@ const StekFinderResults: React.FC<StekFinderResultsProps> = ({ results, isLoadin
               name={result.location.name}
               confidence={result.confidence}
             />
+
+            {/* AI Redenering */}
+            {result.reasoning && (
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-purple-900/20 border border-purple-500/20">
+                <Brain className="text-purple-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-purple-400 mb-1">AI Redenering</p>
+                  <p className="text-white/70 text-sm">{result.reasoning}</p>
+                </div>
+              </div>
+            )}
 
             {/* Vistip */}
             {result.tips && (

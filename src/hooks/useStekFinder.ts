@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import exifr from 'exifr';
 
 export interface StekResult {
   id: number;
@@ -15,6 +16,12 @@ export interface StekResult {
     water_type: string;
   };
   tips?: string;
+  reasoning?: string;
+  reverseGeocode?: {
+    displayName: string;
+    water: string | null;
+  };
+  source: 'exif' | 'ai' | 'exif+ai';
   timestamp?: number;
 }
 
@@ -51,9 +58,35 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+async function extractExif(file: File) {
+  try {
+    const gps = await exifr.gps(file);
+    const meta = await exifr.parse(file, {
+      pick: ['DateTimeOriginal', 'CreateDate'],
+    });
+    return {
+      gps: gps || null,
+      date: meta?.DateTimeOriginal || meta?.CreateDate || null,
+    };
+  } catch {
+    return { gps: null, date: null };
+  }
+}
+
+async function reverseGeocode(lat: number, lng: number) {
+  try {
+    const res = await fetch(`/api/reverse-geocode?lat=${lat}&lng=${lng}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export const useStekFinder = () => {
   const [results, setResults] = useState<StekResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [user] = useState<StekUser>({ name: 'Visser' });
   const [credits, setCredits] = useState(() => {
@@ -86,12 +119,25 @@ export const useStekFinder = () => {
     setShouldHighlightInput(false);
 
     try {
+      // Stap 1: EXIF data extractie
+      setLoadingStep('GPS-data zoeken in foto...');
+      const exif = await extractExif(file);
+
+      // Stap 2: AI analyse
+      setLoadingStep(exif.gps
+        ? 'GPS gevonden! AI bevestigt locatie...'
+        : 'AI analyseert foto...');
+
       const imageBase64 = await fileToBase64(file);
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64 }),
+        body: JSON.stringify({
+          imageBase64,
+          exifGps: exif.gps,
+          exifDate: exif.date ? new Date(exif.date).toISOString() : null,
+        }),
       });
 
       if (!response.ok) {
@@ -103,13 +149,24 @@ export const useStekFinder = () => {
 
       setCredits(prev => prev - 1);
 
+      // Stap 3: Reverse geocoding voor extra context
+      setLoadingStep('Locatiegegevens ophalen...');
+      const lat = data.location.lat;
+      const lng = data.location.lng;
+      const geo = await reverseGeocode(lat, lng);
+
+      const source = exif.gps ? 'exif+ai' : 'ai';
+
       const result: StekResult = {
         id: Date.now(),
         imageUrl: URL.createObjectURL(file),
         location: data.location,
-        confidence: data.confidence,
+        confidence: exif.gps ? Math.max(data.confidence, 90) : data.confidence,
         analysis: data.analysis,
         tips: data.tips,
+        reasoning: data.reasoning,
+        reverseGeocode: geo ? { displayName: geo.displayName, water: geo.water } : undefined,
+        source,
         timestamp: Date.now(),
       };
 
@@ -123,6 +180,7 @@ export const useStekFinder = () => {
       setError(message);
     } finally {
       setIsLoading(false);
+      setLoadingStep('');
     }
   };
 
@@ -140,6 +198,7 @@ export const useStekFinder = () => {
   return {
     results,
     isLoading,
+    loadingStep,
     error,
     shouldHighlightInput,
     credits,

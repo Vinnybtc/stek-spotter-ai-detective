@@ -8,6 +8,7 @@ const StekFinder = () => {
   const {
     results,
     isLoading,
+    loadingStep,
     error,
     shouldHighlightInput,
     credits,
@@ -38,6 +39,7 @@ const StekFinder = () => {
         <StekFinderInput
           onSearch={handleSearch}
           isLoading={isLoading}
+          loadingStep={loadingStep}
           onClear={handleClear}
           user={user}
           credits={credits}
