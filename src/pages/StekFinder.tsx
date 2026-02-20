@@ -65,9 +65,13 @@ const StekFinder = () => {
 
         {/* Fun fallback message */}
         {funMessage && !error && (
-          <div className="text-center p-6 bg-sky-900/20 rounded-2xl border border-sky-500/20 mb-8 animate-fade-in-up">
-            <Fish className="h-10 w-10 mx-auto mb-3 text-sky-400" />
-            <p className="text-lg text-white/90">{funMessage}</p>
+          <div className="text-center p-8 bg-gradient-to-b from-sky-900/30 to-black/20 rounded-2xl border border-sky-500/20 mb-8 animate-fade-in-up">
+            <div className="text-5xl mb-4">🐟</div>
+            <p className="text-xl font-bold text-white/90 mb-2">{funMessage}</p>
+            <p className="text-sm text-white/50 mt-3">
+              Tip: upload een foto van de plek waar je vist — water, oever, brug, steiger. Dat werkt het beste!
+            </p>
+            <p className="text-xs text-green-400 mt-2">Je credit is niet afgeschreven.</p>
           </div>
         )}
 
