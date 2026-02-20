@@ -1,21 +1,35 @@
 const SUPABASE_URL = 'https://vwqwpfimljkgycdhblwx.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
 
-async function sendTelegram(message) {
+async function sendTelegram(message, photoUrl = null) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return;
 
   try {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        parse_mode: 'HTML',
-      }),
-    });
+    if (photoUrl) {
+      // Stuur foto met caption
+      await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          photo: photoUrl,
+          caption: message,
+          parse_mode: 'HTML',
+        }),
+      });
+    } else {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: 'HTML',
+        }),
+      });
+    }
   } catch (e) {
     console.error('Telegram error:', e);
   }
@@ -52,10 +66,7 @@ export default async function handler(req, res) {
         `📊 ${data.confidence || 0}% zekerheid\n` +
         `🏷️ Bron: ${data.source || 'ai'}\n` +
         `⏰ ${new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' })}`;
-      if (data.photoUrl) {
-        msg += `\n📸 <a href="${data.photoUrl}">Bekijk foto</a>`;
-      }
-      await sendTelegram(msg);
+      await sendTelegram(msg, data.photoUrl || null);
     }
 
     if (event === 'feedback' && data) {
