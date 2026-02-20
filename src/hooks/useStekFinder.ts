@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import exifr from 'exifr';
 
 export interface StekResult {
@@ -17,21 +17,89 @@ export interface StekResult {
   };
   tips?: string;
   reasoning?: string;
+  fun_response?: string;
   reverseGeocode?: {
     displayName: string;
     water: string | null;
   };
   source: 'exif' | 'ai' | 'exif+ai';
   timestamp?: number;
+  feedback?: 'up' | 'down';
 }
 
 export interface StekUser {
   name: string;
 }
 
+export interface CreditsInfo {
+  remaining: number;
+  dailyTotal: number;
+  streak: number;
+  bonusToday: boolean;
+  nextReset: string;
+}
+
+// ── Credits systeem ──────────────────────────────────────────────
+const CREDITS_KEY = 'stekfinder_credits_v2';
+const DAILY_FREE = 3;
+
+interface CreditsState {
+  remaining: number;
+  lastResetDate: string;
+  streak: number;
+  lastVisitDate: string;
+  totalAnalyses: number;
+}
+
+function getTodayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function loadCredits(): CreditsState {
+  try {
+    const raw = localStorage.getItem(CREDITS_KEY);
+    if (!raw) throw new Error('no data');
+    const state: CreditsState = JSON.parse(raw);
+    const today = getTodayStr();
+
+    if (state.lastResetDate !== today) {
+      // Nieuwe dag: reset credits
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      const newStreak = state.lastVisitDate === yesterdayStr ? state.streak + 1 : 1;
+      // Streak bonus: elke 3 dagen +1 extra credit
+      const streakBonus = newStreak % 3 === 0 ? 1 : 0;
+
+      return {
+        remaining: DAILY_FREE + streakBonus,
+        lastResetDate: today,
+        streak: newStreak,
+        lastVisitDate: today,
+        totalAnalyses: state.totalAnalyses,
+      };
+    }
+
+    return { ...state, lastVisitDate: today };
+  } catch {
+    return {
+      remaining: DAILY_FREE + 1, // +1 bonus voor eerste bezoek
+      lastResetDate: getTodayStr(),
+      streak: 1,
+      lastVisitDate: getTodayStr(),
+      totalAnalyses: 0,
+    };
+  }
+}
+
+function saveCredits(state: CreditsState) {
+  localStorage.setItem(CREDITS_KEY, JSON.stringify(state));
+}
+
+// ── History ──────────────────────────────────────────────────────
 const HISTORY_KEY = 'stekfinder_history';
-const CREDITS_KEY = 'stekfinder_credits';
-const MAX_HISTORY = 10;
+const MAX_HISTORY = 20;
 
 function loadHistory(): StekResult[] {
   try {
@@ -46,6 +114,7 @@ function saveHistory(results: StekResult[]) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(results.slice(0, MAX_HISTORY)));
 }
 
+// ── Helpers ──────────────────────────────────────────────────────
 function resizeAndConvertToBase64(file: File, maxSize = 1024): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -94,22 +163,41 @@ async function reverseGeocode(lat: number, lng: number) {
   }
 }
 
+// ── Hook ─────────────────────────────────────────────────────────
 export const useStekFinder = () => {
   const [results, setResults] = useState<StekResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [funMessage, setFunMessage] = useState<string | null>(null);
   const [user] = useState<StekUser>({ name: 'Visser' });
-  const [credits, setCredits] = useState(() => {
-    const saved = localStorage.getItem(CREDITS_KEY);
-    return saved ? parseInt(saved, 10) : 5;
-  });
+  const [creditsState, setCreditsState] = useState<CreditsState>(loadCredits);
   const [shouldHighlightInput, setShouldHighlightInput] = useState(true);
   const [history, setHistory] = useState<StekResult[]>(loadHistory);
 
   useEffect(() => {
-    localStorage.setItem(CREDITS_KEY, String(credits));
-  }, [credits]);
+    saveCredits(creditsState);
+  }, [creditsState]);
+
+  const creditsInfo: CreditsInfo = {
+    remaining: creditsState.remaining,
+    dailyTotal: DAILY_FREE,
+    streak: creditsState.streak,
+    bonusToday: creditsState.streak % 3 === 0 && creditsState.streak > 0,
+    nextReset: (() => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      return tomorrow.toISOString();
+    })(),
+  };
+
+  const refundCredit = useCallback(() => {
+    setCreditsState(prev => {
+      const updated = { ...prev, remaining: prev.remaining + 1 };
+      return updated;
+    });
+  }, []);
 
   const handleSearch = async (file: File | null) => {
     if (isLoading) return;
@@ -119,13 +207,14 @@ export const useStekFinder = () => {
       return;
     }
 
-    if (credits <= 0) {
-      setError('Je hebt geen credits meer. Kom morgen terug!');
+    if (creditsState.remaining <= 0) {
+      setError('Je hebt geen credits meer vandaag. Kom morgen terug voor nieuwe credits!');
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setFunMessage(null);
     setResults([]);
     setShouldHighlightInput(false);
 
@@ -137,7 +226,7 @@ export const useStekFinder = () => {
       // Stap 2: AI analyse
       setLoadingStep(exif.gps
         ? 'GPS gevonden! AI bevestigt locatie...'
-        : 'AI analyseert foto...');
+        : 'AI analyseert je foto...');
 
       const imageBase64 = await resizeAndConvertToBase64(file);
 
@@ -151,16 +240,29 @@ export const useStekFinder = () => {
         }),
       });
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'Analyse mislukt. Probeer het opnieuw.');
-      }
-
       const data = await response.json();
 
-      setCredits(prev => prev - 1);
+      // Check of het een refund/fun response is
+      if (data.refund) {
+        setFunMessage(data.fun_response || 'Oeps, dat ging niet helemaal goed. Je credit is terug!');
+        // Geen credit aftrekken
+        return;
+      }
 
-      // Stap 3: Reverse geocoding voor extra context
+      if (data.fun_response && data.confidence === 0) {
+        setFunMessage(data.fun_response);
+        // Geen credit aftrekken bij confidence 0
+        return;
+      }
+
+      // Credit aftrekken
+      setCreditsState(prev => ({
+        ...prev,
+        remaining: prev.remaining - 1,
+        totalAnalyses: prev.totalAnalyses + 1,
+      }));
+
+      // Stap 3: Reverse geocoding
       setLoadingStep('Locatiegegevens ophalen...');
       const lat = data.location.lat;
       const lng = data.location.lng;
@@ -176,6 +278,7 @@ export const useStekFinder = () => {
         analysis: data.analysis,
         tips: data.tips,
         reasoning: data.reasoning,
+        fun_response: data.fun_response,
         reverseGeocode: geo ? { displayName: geo.displayName, water: geo.water } : undefined,
         source,
         timestamp: Date.now(),
@@ -187,17 +290,38 @@ export const useStekFinder = () => {
       setHistory(newHistory);
       saveHistory(newHistory);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Er ging iets mis.';
-      setError(message);
+      // Bij ELKE error: geef credit terug en toon leuke boodschap
+      setFunMessage('Oeps! Er ging iets mis met de analyse. Je credit is terug, probeer het nog eens!');
     } finally {
       setIsLoading(false);
       setLoadingStep('');
     }
   };
 
+  const handleFeedback = useCallback((resultId: number, feedback: 'up' | 'down') => {
+    setResults(prev => prev.map(r =>
+      r.id === resultId ? { ...r, feedback } : r
+    ));
+
+    // Bij negatieve feedback: credit teruggeven
+    if (feedback === 'down') {
+      refundCredit();
+    }
+
+    // Update history
+    setHistory(prev => {
+      const updated = prev.map(r =>
+        r.id === resultId ? { ...r, feedback } : r
+      );
+      saveHistory(updated);
+      return updated;
+    });
+  }, [refundCredit]);
+
   const handleClear = () => {
     setResults([]);
     setError(null);
+    setFunMessage(null);
     setShouldHighlightInput(true);
   };
 
@@ -211,12 +335,15 @@ export const useStekFinder = () => {
     isLoading,
     loadingStep,
     error,
+    funMessage,
     shouldHighlightInput,
-    credits,
+    creditsInfo,
     handleSearch,
     handleClear,
+    handleFeedback,
     user,
     history,
     clearHistory,
+    totalAnalyses: creditsState.totalAnalyses,
   };
 };

@@ -123,4 +123,51 @@
       animation: fade-in-up 0.5s ease-out forwards;
       opacity: 0;
   }
+
+  /* Loading dots animation */
+  .loading-dots::after {
+    content: '';
+    animation: dots 1.5s steps(4, end) infinite;
+  }
+
+  @keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+    100% { content: ''; }
+  }
+
+  /* Confetti burst for high confidence */
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(-100%) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh) rotate(720deg);
+      opacity: 0;
+    }
+  }
+
+  .confetti-piece {
+    position: fixed;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    animation: confetti-fall 2.5s ease-out forwards;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Pulse glow for results card */
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(14, 165, 233, 0.1); }
+    50% { box-shadow: 0 0 40px rgba(14, 165, 233, 0.3); }
+  }
+
+  .result-glow {
+    animation: glow-pulse 2s ease-in-out 1;
+  }
 }

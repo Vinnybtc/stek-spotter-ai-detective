@@ -2,7 +2,9 @@ import PageLayout from '@/components/layout/PageLayout';
 import StekFinderInput from '@/components/stek-finder/StekFinderInput';
 import StekFinderResults from '@/components/stek-finder/StekFinderResults';
 import SearchHistory from '@/components/stek-finder/SearchHistory';
+import Confetti from '@/components/stek-finder/Confetti';
 import { useStekFinder } from '@/hooks/useStekFinder';
+import { Fish } from 'lucide-react';
 
 const StekFinder = () => {
   const {
@@ -10,17 +12,23 @@ const StekFinder = () => {
     isLoading,
     loadingStep,
     error,
+    funMessage,
     shouldHighlightInput,
-    credits,
+    creditsInfo,
     handleSearch,
     handleClear,
+    handleFeedback,
     user,
     history,
     clearHistory,
+    totalAnalyses,
   } = useStekFinder();
+
+  const showConfetti = results.length > 0 && results[0].confidence >= 75;
 
   return (
     <PageLayout>
+      <Confetti trigger={showConfetti} />
       <div className="text-center">
         <h1 className="text-5xl md:text-6xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-orange-400">
           StekFinder
@@ -42,8 +50,9 @@ const StekFinder = () => {
           loadingStep={loadingStep}
           onClear={handleClear}
           user={user}
-          credits={credits}
+          creditsInfo={creditsInfo}
           shouldHighlight={shouldHighlightInput}
+          totalAnalyses={totalAnalyses}
         />
       </div>
 
@@ -53,7 +62,20 @@ const StekFinder = () => {
             {error}
           </div>
         )}
-        <StekFinderResults results={results} isLoading={isLoading} />
+
+        {/* Fun fallback message */}
+        {funMessage && !error && (
+          <div className="text-center p-6 bg-sky-900/20 rounded-2xl border border-sky-500/20 mb-8 animate-fade-in-up">
+            <Fish className="h-10 w-10 mx-auto mb-3 text-sky-400" />
+            <p className="text-lg text-white/90">{funMessage}</p>
+          </div>
+        )}
+
+        <StekFinderResults
+          results={results}
+          isLoading={isLoading}
+          onFeedback={handleFeedback}
+        />
       </div>
 
       {/* Zoekgeschiedenis */}

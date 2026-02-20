@@ -1,14 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StekResult } from '@/hooks/useStekFinder';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Target, Leaf, Droplet, Lightbulb, Brain, Navigation, Satellite } from 'lucide-react';
+import {
+  MapPin, Target, Leaf, Droplet, Lightbulb, Brain,
+  Navigation, Satellite, ThumbsUp, ThumbsDown, Share2, Check, Fish,
+} from 'lucide-react';
 import LocationMap from './LocationMap';
 
 interface StekFinderResultsProps {
   results: StekResult[];
   isLoading: boolean;
+  onFeedback: (resultId: number, feedback: 'up' | 'down') => void;
 }
 
 const ConfidenceBadge = ({ confidence }: { confidence: number }) => {
@@ -41,11 +46,96 @@ const SourceBadge = ({ source }: { source: string }) => {
   );
 };
 
+const FeedbackButtons = ({
+  resultId, feedback, onFeedback,
+}: {
+  resultId: number;
+  feedback?: 'up' | 'down';
+  onFeedback: (id: number, fb: 'up' | 'down') => void;
+}) => {
+  if (feedback) {
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        {feedback === 'up' ? (
+          <span className="text-green-400 flex items-center gap-1">
+            <ThumbsUp className="h-4 w-4" /> Bedankt voor je feedback!
+          </span>
+        ) : (
+          <span className="text-orange-400 flex items-center gap-1">
+            <ThumbsDown className="h-4 w-4" /> Bedankt! Je credit is teruggegeven.
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-sm text-white/50">Klopte dit?</span>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onFeedback(resultId, 'up')}
+        className="text-white/60 hover:text-green-400 hover:bg-green-500/10"
+      >
+        <ThumbsUp className="h-4 w-4 mr-1" /> Ja
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onFeedback(resultId, 'down')}
+        className="text-white/60 hover:text-orange-400 hover:bg-orange-500/10"
+      >
+        <ThumbsDown className="h-4 w-4 mr-1" /> Nee
+      </Button>
+    </div>
+  );
+};
+
+const ShareButton = ({ result }: { result: StekResult }) => {
+  const [shared, setShared] = useState(false);
+
+  const handleShare = async () => {
+    const text = `Ik heb een visplek ontdekt met StekFinder!\n${result.location.name} (${result.confidence}% zekerheid)\nhttps://www.google.com/maps/@${result.location.lat},${result.location.lng},17z/data=!3m1!1e1`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'StekFinder resultaat', text });
+        setShared(true);
+      } catch {
+        // User cancelled
+      }
+    } else {
+      await navigator.clipboard.writeText(text);
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    }
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleShare}
+      className="text-white/60 hover:text-sky-400 hover:bg-sky-500/10"
+    >
+      {shared ? <Check className="h-4 w-4 mr-1" /> : <Share2 className="h-4 w-4 mr-1" />}
+      {shared ? 'Gekopieerd!' : 'Deel je stek'}
+    </Button>
+  );
+};
+
 const LoadingSkeleton = () => (
   <div className="grid gap-8">
     <Card className="bg-black/20 border-white/10 text-white">
       <CardHeader>
-        <Skeleton className="h-8 w-3/4" />
+        <div className="flex items-center gap-3">
+          <Fish className="h-8 w-8 text-sky-400 animate-bounce" />
+          <div>
+            <Skeleton className="h-6 w-48 mb-2" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid md:grid-cols-2 gap-6">
@@ -59,18 +149,19 @@ const LoadingSkeleton = () => (
             </div>
           </div>
         </div>
-        <Skeleton className="w-full h-[300px] rounded-lg" />
+        <Skeleton className="w-full h-[350px] rounded-lg" />
       </CardContent>
     </Card>
   </div>
 );
 
-const StekFinderResults: React.FC<StekFinderResultsProps> = ({ results, isLoading }) => {
+const StekFinderResults: React.FC<StekFinderResultsProps> = ({ results, isLoading, onFeedback }) => {
   if (isLoading) return <LoadingSkeleton />;
 
   if (!results || results.length === 0) {
     return (
       <div className="text-center py-16 text-white/50">
+        <Fish className="h-12 w-12 mx-auto mb-3 opacity-30" />
         <p>Analyseer een foto om hier de resultaten te zien.</p>
       </div>
     );
@@ -91,7 +182,6 @@ const StekFinderResults: React.FC<StekFinderResultsProps> = ({ results, isLoadin
               </div>
               <ConfidenceBadge confidence={result.confidence} />
             </div>
-            {/* Reverse geocode adres */}
             {result.reverseGeocode && (
               <div className="flex items-center gap-2 text-sm text-white/50 mt-1 ml-9">
                 <Navigation className="h-3 w-3" />
@@ -153,6 +243,14 @@ const StekFinderResults: React.FC<StekFinderResultsProps> = ({ results, isLoadin
               </div>
             )}
 
+            {/* Fun response */}
+            {result.fun_response && (
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-orange-900/20 border border-orange-500/20">
+                <Fish className="text-orange-400 shrink-0 mt-0.5" />
+                <p className="text-white/80">{result.fun_response}</p>
+              </div>
+            )}
+
             {/* Vistip */}
             {result.tips && (
               <div className="flex items-start gap-3 p-4 rounded-lg bg-sky-900/20 border border-sky-500/20">
@@ -163,6 +261,16 @@ const StekFinderResults: React.FC<StekFinderResultsProps> = ({ results, isLoadin
                 </div>
               </div>
             )}
+
+            {/* Feedback + Delen */}
+            <div className="flex items-center justify-between flex-wrap gap-3 pt-2 border-t border-white/10">
+              <FeedbackButtons
+                resultId={result.id}
+                feedback={result.feedback}
+                onFeedback={onFeedback}
+              />
+              <ShareButton result={result} />
+            </div>
           </CardContent>
         </Card>
       ))}
