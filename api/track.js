@@ -47,13 +47,15 @@ export default async function handler(req, res) {
 
     // Telegram notificatie bij analyse
     if (event === 'analysis_complete' && data) {
-      await sendTelegram(
-        `🔍 <b>Nieuwe analyse op StekFinder!</b>\n\n` +
+      let msg = `🔍 <b>Nieuwe analyse op StekFinder!</b>\n\n` +
         `📍 ${data.location || 'Onbekend'}\n` +
         `📊 ${data.confidence || 0}% zekerheid\n` +
         `🏷️ Bron: ${data.source || 'ai'}\n` +
-        `⏰ ${new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' })}`
-      );
+        `⏰ ${new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' })}`;
+      if (data.photoUrl) {
+        msg += `\n📸 <a href="${data.photoUrl}">Bekijk foto</a>`;
+      }
+      await sendTelegram(msg);
     }
 
     if (event === 'feedback' && data) {

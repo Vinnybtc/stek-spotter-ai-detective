@@ -71,6 +71,33 @@ function getRandomFallback() {
   return FUN_FALLBACKS[Math.floor(Math.random() * FUN_FALLBACKS.length)];
 }
 
+const SUPABASE_URL = 'https://vwqwpfimljkgycdhblwx.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
+
+async function savePhoto(imageBase64) {
+  if (!SUPABASE_KEY) return null;
+  try {
+    const buffer = Buffer.from(imageBase64, 'base64');
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const res = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/stekfinder-uploads/${filename}`,
+      {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'image/jpeg',
+        },
+        body: buffer,
+      }
+    );
+    if (!res.ok) return null;
+    return `${SUPABASE_URL}/storage/v1/object/public/stekfinder-uploads/${filename}`;
+  } catch {
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -81,6 +108,9 @@ export default async function handler(req, res) {
   if (!imageBase64) {
     return res.status(400).json({ error: 'Geen afbeelding meegegeven.' });
   }
+
+  // Foto opslaan in Supabase Storage (fire and forget)
+  const photoUrlPromise = savePhoto(imageBase64);
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -165,6 +195,8 @@ export default async function handler(req, res) {
       }
 
       const result = JSON.parse(choice.message.content);
+      const photoUrl = await photoUrlPromise;
+      if (photoUrl) result.photoUrl = photoUrl;
       return res.status(200).json(result);
 
     } catch (error) {

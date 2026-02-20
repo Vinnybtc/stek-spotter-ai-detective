@@ -300,6 +300,7 @@ export const useStekFinder = () => {
         location: data.location.name,
         confidence: result.confidence,
         source,
+        photoUrl: data.photoUrl || null,
       });
 
       const newHistory = [result, ...history].slice(0, MAX_HISTORY);
