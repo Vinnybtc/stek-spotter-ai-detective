@@ -1,4 +1,4 @@
-const SYSTEM_PROMPT = `Je bent een expert OSINT-analist gespecialiseerd in beeldgeolocatie, met diepgaande kennis van Nederlandse en Europese waterlichamen, vislocaties en landschappen.
+const INSTRUCTIONS = `Je bent een expert OSINT-analist gespecialiseerd in beeldgeolocatie, met diepgaande kennis van Nederlandse en Europese waterlichamen, vislocaties en landschappen.
 
 TAAK: Analyseer de foto om de geografische locatie te bepalen.
 
@@ -22,7 +22,7 @@ BELANGRIJK:
 - Nederlandse kenmerken: vlak landschap, veel kanalen/polders, specifieke brugstijlen, groene weilanden
 - Let op seizoensaanwijzingen (kale bomen = winter, bloeiend riet = zomer)
 
-Antwoord UITSLUITEND als geldig JSON:
+Antwoord UITSLUITEND als geldig JSON (geen markdown, geen code blocks, puur JSON):
 {
   "location": {
     "lat": <nummer>,
@@ -31,8 +31,8 @@ Antwoord UITSLUITEND als geldig JSON:
   },
   "confidence": <0-100>,
   "analysis": {
-    "landmarks": ["<herkenningspunt 1>", "<herkenningspunt 2>", ...],
-    "vegetation": ["<vegetatie 1>", "<vegetatie 2>", ...],
+    "landmarks": ["<herkenningspunt 1>", "<herkenningspunt 2>"],
+    "vegetation": ["<vegetatie 1>", "<vegetatie 2>"],
     "water_type": "<beschrijving van het type water>"
   },
   "reasoning": "<korte uitleg van je stap-voor-stap redenering>",
@@ -56,10 +56,10 @@ export default async function handler(req, res) {
   }
 
   // Bouw user prompt op met eventuele EXIF context
-  let userText = 'Analyseer deze visfoto en bepaal de locatie. Geef je antwoord als JSON.';
+  let userText = INSTRUCTIONS + '\n\nAnalyseer deze visfoto en bepaal de locatie.';
 
   if (exifGps) {
-    userText += `\n\nEXTRA CONTEXT - EXIF GPS data gevonden in de foto:\nLatitude: ${exifGps.latitude}\nLongitude: ${exifGps.longitude}\nBevestig of de visuele inhoud overeenkomt met deze coordinaten. Als de foto duidelijk NIET bij deze locatie hoort, negeer de GPS data en geef je eigen analyse.`;
+    userText += `\n\nEXTRA CONTEXT - EXIF GPS data gevonden in de foto:\nLatitude: ${exifGps.latitude}\nLongitude: ${exifGps.longitude}\nBevestig of de visuele inhoud overeenkomt met deze coordinaten.`;
   }
 
   if (exifDate) {
@@ -74,9 +74,8 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'o4-mini',
+        model: 'gpt-4o',
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
           {
             role: 'user',
             content: [
@@ -91,14 +90,17 @@ export default async function handler(req, res) {
             ],
           },
         ],
-        max_completion_tokens: 2000,
+        max_tokens: 1500,
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
       }),
     });
 
     if (!response.ok) {
-      const err = await response.json();
-      console.error('OpenAI API error:', err);
-      return res.status(500).json({ error: 'AI analyse mislukt. Probeer het opnieuw.' });
+      const err = await response.json().catch(() => ({}));
+      console.error('OpenAI API error:', JSON.stringify(err));
+      const msg = err?.error?.message || 'AI analyse mislukt. Probeer het opnieuw.';
+      return res.status(500).json({ error: msg });
     }
 
     const data = await response.json();
@@ -108,15 +110,19 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Geen analyse resultaat ontvangen.' });
     }
 
-    // Parse JSON uit het antwoord (strip eventuele markdown code blocks)
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return res.status(500).json({ error: 'Kon het AI-antwoord niet verwerken.' });
+    try {
+      const result = JSON.parse(content);
+      return res.status(200).json(result);
+    } catch {
+      // Fallback: probeer JSON te extracten
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('Unparseable response:', content);
+        return res.status(500).json({ error: 'Kon het AI-antwoord niet verwerken.' });
+      }
+      const result = JSON.parse(jsonMatch[0]);
+      return res.status(200).json(result);
     }
-
-    const result = JSON.parse(jsonMatch[0]);
-
-    return res.status(200).json(result);
   } catch (error) {
     console.error('Analysis error:', error);
     return res.status(500).json({ error: 'Er ging iets mis bij de analyse.' });

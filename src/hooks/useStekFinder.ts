@@ -46,15 +46,26 @@ function saveHistory(results: StekResult[]) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(results.slice(0, MAX_HISTORY)));
 }
 
-function fileToBase64(file: File): Promise<string> {
+function resizeAndConvertToBase64(file: File, maxSize = 1500): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxSize || height > maxSize) {
+        const ratio = Math.min(maxSize / width, maxSize / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
       resolve(dataUrl.split(',')[1]);
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
   });
 }
 
@@ -128,7 +139,7 @@ export const useStekFinder = () => {
         ? 'GPS gevonden! AI bevestigt locatie...'
         : 'AI analyseert foto...');
 
-      const imageBase64 = await fileToBase64(file);
+      const imageBase64 = await resizeAndConvertToBase64(file);
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
