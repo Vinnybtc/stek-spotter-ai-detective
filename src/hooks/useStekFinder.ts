@@ -115,7 +115,7 @@ function saveHistory(results: StekResult[]) {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────
-function resizeAndConvertToBase64(file: File, maxSize = 1024): Promise<string> {
+function resizeAndConvertToBase64(file: File, maxSize = 1536): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -233,9 +233,20 @@ export const useStekFinder = () => {
       const exif = await extractExif(file);
 
       // Stap 2: AI analyse
-      setLoadingStep(exif.gps
-        ? 'GPS gevonden! AI bevestigt locatie...'
-        : 'AI analyseert je foto...');
+      if (exif.gps) {
+        setLoadingStep('GPS gevonden! AI bevestigt de exacte locatie...');
+      } else {
+        setLoadingStep('AI analyseert de foto — dit duurt 15-30 seconden...');
+      }
+
+      // Na 10 seconden: update bericht
+      const stepTimer = setTimeout(() => {
+        setLoadingStep('Achtergrond, water en herkenningspunten worden geanalyseerd...');
+      }, 10000);
+      // Na 20 seconden: nog een update
+      const stepTimer2 = setTimeout(() => {
+        setLoadingStep('Bijna klaar — locatie wordt bepaald...');
+      }, 20000);
 
       const imageBase64 = await resizeAndConvertToBase64(file);
 
@@ -249,6 +260,8 @@ export const useStekFinder = () => {
         }),
       });
 
+      clearTimeout(stepTimer);
+      clearTimeout(stepTimer2);
       const data = await response.json();
 
       // Check of het een refund/fun response is (API error, niet inhoudelijk)

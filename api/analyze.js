@@ -181,7 +181,7 @@ export default async function handler(req, res) {
                   type: 'image_url',
                   image_url: {
                     url: `data:image/jpeg;base64,${imageBase64}`,
-                    detail: 'auto',
+                    detail: 'high',
                   },
                 },
               ],
