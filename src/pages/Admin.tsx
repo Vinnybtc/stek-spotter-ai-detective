@@ -302,7 +302,7 @@ const Admin = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-8 bg-black/20 p-1 rounded-lg border border-white/10 w-fit">
+        <div className="flex gap-1 mb-8 bg-black/40 p-1.5 rounded-xl border border-white/15 w-fit">
           {([
             { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
             { key: 'autopilot', label: 'Autopilot', icon: Bot },
@@ -311,10 +311,10 @@ const Admin = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeTab === tab.key
-                  ? 'bg-sky-500/20 text-sky-400'
-                  : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                  ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25'
+                  : 'text-white/60 hover:text-white hover:bg-white/10'
               }`}
             >
               <tab.icon className="h-4 w-4" />
