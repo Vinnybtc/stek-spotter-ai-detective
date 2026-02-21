@@ -1,8 +1,24 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/generate",
+      "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/cron/post",
+      "schedule": "0 9 * * *"
+    }
+  ],
   "functions": {
     "api/analyze.js": {
       "maxDuration": 120,
       "memory": 1024
+    },
+    "api/cron/generate.js": {
+      "maxDuration": 120
+    },
+    "api/admin/autopilot.js": {
+      "maxDuration": 120
     }
   },
   "trailingSlash": false,
